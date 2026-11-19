@@ -21,6 +21,9 @@ Aucune méthode de cette classe n'appelle input() ni print() :
 elles retournent des valeurs ou lèvent des exceptions.
 """
 
+import heapq
+import math
+
 from .arc import Arc
 from .exceptions import (
     ArcExistantError,
@@ -172,6 +175,84 @@ class Graphe:
             "predecesseurs": self.predecesseurs(identifiant),
             "successeurs": self.successeurs(identifiant),
         }
+
+    # ------------------------------------------------------------------
+    # Recherche d'itinéraire (partie D)
+    # ------------------------------------------------------------------
+    def shortest_path(self, depart, arrivee):
+        """Plus court chemin de `depart` à `arrivee` (algorithme de Dijkstra).
+
+        Retourne un tuple (chemin, cout) :
+        - chemin : liste des identifiants, de `depart` à `arrivee` inclus ;
+        - cout   : somme des poids des arcs empruntés.
+
+        Cas particuliers :
+        - départ = arrivée : (["A"], 0), chemin trivial de coût nul ;
+        - aucun chemin     : ([], math.inf). Ce n'est pas une erreur mais un
+          résultat normal (ex. vers le sommet isolé H), d'où l'absence
+          d'exception. Le tuple se déballe toujours de la même façon
+          (`chemin, cout = g.shortest_path(...)`) et `if not chemin` suffit
+          pour tester l'absence de chemin.
+
+        Lève SommetInconnuError si `depart` ou `arrivee` n'existe pas.
+        """
+        return self._dijkstra(depart, arrivee)
+
+    def _dijkstra(self, depart, arrivee, exclus=frozenset()):
+        """Dijkstra avec file de priorité (heapq), arrêt dès que `arrivee` est fixée.
+
+        `exclus` : sommets que le chemin n'a pas le droit de traverser
+        (prévu pour shortest_path_avoiding, partie E). Le départ et l'arrivée
+        ne sont jamais filtrés ici : c'est à l'appelant de décider du
+        comportement si l'un d'eux est interdit.
+
+        Validité : les poids sont >= 0 (garanti par valider_poids). Quand un
+        sommet sort de la file avec le plus petit coût provisoire, aucun
+        détour ne peut donc plus le rendre moins cher : son coût est définitif.
+
+        Complexité : O((|V| + |E|) log |V|).
+        """
+        self._obtenir_sommet(depart)
+        self._obtenir_sommet(arrivee)
+
+        couts = {depart: 0}        # meilleur coût connu depuis le départ
+        precedent = {depart: None}  # pour reconstruire le chemin
+        definitifs = set()          # sommets dont le coût est définitif
+        # Entrées (cout, ordre, sommet) : `ordre` départage les égalités de coût
+        # (résultat déterministe) et évite de comparer des identifiants.
+        file = [(0, 0, depart)]
+        ordre = 1
+
+        while file:
+            cout, _, sommet = heapq.heappop(file)
+            if sommet in definitifs:
+                continue  # entrée périmée : un meilleur coût a déjà été traité
+            definitifs.add(sommet)
+            if sommet == arrivee:
+                return self._reconstruire_chemin(precedent, arrivee), cout
+
+            for voisin, arc in self._adjacence[sommet].items():
+                if voisin in definitifs or (voisin in exclus and voisin != arrivee):
+                    continue
+                nouveau = cout + arc.poids
+                if voisin not in couts or nouveau < couts[voisin]:
+                    couts[voisin] = nouveau
+                    precedent[voisin] = sommet
+                    heapq.heappush(file, (nouveau, ordre, voisin))
+                    ordre += 1
+
+        return [], math.inf  # file vide sans atteindre l'arrivée
+
+    @staticmethod
+    def _reconstruire_chemin(precedent, arrivee):
+        """Remonte les prédécesseurs depuis l'arrivée jusqu'au départ."""
+        chemin = []
+        sommet = arrivee
+        while sommet is not None:
+            chemin.append(sommet)
+            sommet = precedent[sommet]
+        chemin.reverse()
+        return chemin
 
     # Raccourcis Python : len(g) et "A" in g
     def __len__(self):
