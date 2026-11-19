@@ -34,6 +34,20 @@ class PoidsInvalideError(GrapheError, ValueError):
     """Le poids d'un arc n'est pas un nombre positif ou nul."""
 
 
+class GrapheCycliqueError(GrapheError, ValueError):
+    """Le graphe contient un cycle : aucun ordre topologique n'existe (partie F).
+
+    L'attribut `cycle` contient un cycle trouvé, sous la forme d'une liste
+    d'identifiants dont le premier et le dernier sont identiques
+    (ex. ["A", "B", "D", "X", "A"]), pour que l'appelant puisse l'exploiter
+    (affichage, mise en évidence, correction des données...).
+    """
+
+    def __init__(self, message, cycle=None):
+        self.cycle = list(cycle) if cycle else []
+        super().__init__(message)
+
+
 # ----------------------------------------------------------------------
 # Erreurs de lecture de fichier (partie B)
 # ----------------------------------------------------------------------

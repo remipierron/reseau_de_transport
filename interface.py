@@ -4,7 +4,8 @@ Lancement (depuis la racine du projet) : python3 interface.py
 
 L'interface ne contient AUCUNE logique de graphe : elle se contente
 d'appeler les méthodes publiques de la classe Graphe (from_file, sommets,
-arcs_en_triplets, analyser_sommet, shortest_path, shortest_path_avoiding)
+arcs_en_triplets, analyser_sommet, shortest_path, shortest_path_avoiding,
+trouver_cycle, topological_sort)
 et d'afficher les résultats.
 Les erreurs (GrapheError) sont montrées dans une boîte de dialogue.
 """
@@ -14,7 +15,7 @@ import tkinter as tk
 from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
 
-from graphe import Graphe, GrapheError
+from graphe import Graphe, GrapheCycliqueError, GrapheError
 
 # Chemins construits à partir de l'emplacement de ce fichier (aucun chemin en dur).
 DOSSIER_PROJET = Path(__file__).resolve().parent
@@ -81,6 +82,12 @@ class InterfaceGraphe:
         self.choix_interdit.grid(row=2, column=1, pady=2)
         ttk.Button(cadre_chemin, text="Calculer", command=self.calculer_chemin).grid(
             row=3, column=0, columnspan=2, pady=4)
+
+        # Structure du graphe (partie F) : cycle ou ordre topologique
+        cadre_structure = ttk.LabelFrame(panneau, text="Structure du graphe", padding=6)
+        cadre_structure.pack(fill="x", pady=(0, 8))
+        ttk.Button(cadre_structure, text="Cycle / ordre topologique",
+                   command=self.analyser_structure).pack()
 
         # Zone de texte où s'affichent les résultats
         self.resultat = tk.Text(panneau, width=34, height=14, state="disabled", wrap="word")
@@ -211,6 +218,23 @@ class InterfaceGraphe:
         else:  # ([], inf) quand aucun chemin n'existe
             self.afficher(f"Aucun chemin de {depart} à {arrivee}{sans}.")
         self.dessiner(chemin)
+
+    def analyser_structure(self):
+        """Affiche un ordre topologique, ou le cycle qui l'empêche (mis en rouge)."""
+        try:
+            ordre = self.graphe.topological_sort()
+        except GrapheCycliqueError as erreur:
+            self.afficher("Le graphe contient un cycle :\n"
+                          f"  {' -> '.join(erreur.cycle)}\n"
+                          "Aucun ordre topologique n'existe.")
+            self.dessiner(erreur.cycle)  # le cycle est fermé : ses arcs sont colorés
+            return
+        if ordre:
+            self.afficher("Le graphe est acyclique.\nOrdre topologique :\n"
+                          f"  {', '.join(ordre)}")
+        else:
+            self.afficher("Le graphe est vide.")
+        self.dessiner()
 
     def afficher(self, texte):
         """Remplace le contenu de la zone de résultats (en lecture seule)."""

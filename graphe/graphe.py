@@ -23,10 +23,12 @@ elles retournent des valeurs ou lèvent des exceptions.
 
 import heapq
 import math
+from collections import deque
 
 from .arc import Arc
 from .exceptions import (
     ArcExistantError,
+    GrapheCycliqueError,
     SommetExistantError,
     SommetInconnuError,
 )
@@ -309,6 +311,118 @@ class Graphe:
             sommet = precedent[sommet]
         chemin.reverse()
         return chemin
+
+    # ------------------------------------------------------------------
+    # Approfondissement algorithmique (partie F, bonus)
+    # ------------------------------------------------------------------
+    def has_cycle(self):
+        """True si le graphe orienté contient au moins un cycle, False sinon.
+
+        Une boucle A -> A compte comme un cycle (de longueur 1). Le graphe
+        vide et un graphe formé uniquement de sommets isolés sont acycliques.
+        Voir trouver_cycle pour l'algorithme.
+        """
+        return bool(self.trouver_cycle())
+
+    def trouver_cycle(self):
+        """Retourne un cycle du graphe, ou [] si le graphe est acyclique.
+
+        Le cycle est une liste d'identifiants dont le premier et le dernier
+        sont identiques : ["A", "B", "D", "X", "A"] signifie
+        A -> B -> D -> X -> A. Le résultat est déterministe (ordre d'ajout).
+
+        Algorithme : parcours en profondeur (DFS) avec trois couleurs.
+        - BLANC : sommet pas encore visité ;
+        - GRIS  : sommet en cours de visite, c'est-à-dire sur la branche
+                  actuellement explorée (dans la pile) ;
+        - NOIR  : sommet terminé, tous ses descendants ont été explorés.
+        Si, depuis un sommet, on rencontre un successeur GRIS, cet arc
+        revient vers un ancêtre de la branche courante (« arc arrière ») :
+        il ferme un cycle. Un successeur NOIR ne crée pas de cycle, car tout
+        ce qui est accessible depuis lui a déjà été exploré sans en trouver.
+        Les sommets GRIS étant exactement ceux de la pile, le cycle se lit
+        directement dans la pile, de l'ancêtre jusqu'au sommet courant.
+
+        Le parcours part de chaque sommet encore BLANC, ce qui couvre aussi
+        les parties du graphe non accessibles depuis le premier sommet.
+        Il est itératif (pile explicite) : pas de RecursionError sur un
+        long graphe. Complexité O(|V| + |E|) : chaque sommet et chaque arc
+        sont examinés une seule fois. Le graphe n'est pas modifié.
+        """
+        BLANC, GRIS, NOIR = 0, 1, 2
+        couleur = dict.fromkeys(self._sommets, BLANC)
+
+        for racine in self._sommets:
+            if couleur[racine] != BLANC:
+                continue
+            couleur[racine] = GRIS
+            # Pile de couples (sommet, itérateur sur ses successeurs restants)
+            pile = [(racine, iter(self._adjacence[racine]))]
+            while pile:
+                sommet, voisins = pile[-1]
+                for voisin in voisins:
+                    if couleur[voisin] == GRIS:
+                        # Arc arrière sommet -> voisin : cycle trouvé.
+                        branche = [s for s, _ in pile]
+                        return branche[branche.index(voisin):] + [voisin]
+                    if couleur[voisin] == BLANC:
+                        couleur[voisin] = GRIS
+                        pile.append((voisin, iter(self._adjacence[voisin])))
+                        break  # on descend : le sommet courant reprendra plus tard
+                else:
+                    # Tous les successeurs ont été examinés : sommet terminé.
+                    couleur[sommet] = NOIR
+                    pile.pop()
+        return []
+
+    def topological_sort(self):
+        """Retourne un ordre topologique des sommets (liste d'identifiants).
+
+        Dans cet ordre, pour tout arc u -> v, u apparaît avant v : c'est un
+        ordonnancement possible des lieux (ou des tâches) qui respecte toutes
+        les liaisons. Tous les sommets y figurent, y compris les isolés.
+
+        Algorithme de Kahn :
+        1. on calcule le degré entrant de chaque sommet ;
+        2. les sommets de degré entrant 0 n'ont aucune contrainte : ils
+           peuvent être placés en premier, on les met dans une file ;
+        3. on retire un sommet de la file, on l'ajoute à l'ordre, et on
+           « supprime » ses arcs sortants en décrémentant le degré entrant
+           de ses successeurs ; un successeur qui tombe à 0 entre dans la file ;
+        4. si tous les sommets ont été placés, l'ordre est topologique.
+           Sinon, les sommets restants ont tous encore un prédécesseur non
+           placé : ils forment (ou mènent depuis) un cycle, et aucun ordre
+           topologique n'existe.
+        La file est FIFO et initialisée dans l'ordre d'ajout des sommets :
+        le résultat est déterministe. Le graphe n'est pas modifié (les degrés
+        sont décrémentés dans une copie). Complexité O(|V| + |E|).
+
+        Lève GrapheCycliqueError si le graphe contient un cycle. Contrairement
+        à « aucun chemin » (partie D), ce n'est pas un résultat normal : la
+        demande n'a pas de sens pour ce graphe, et une liste vide serait
+        ambiguë (c'est aussi l'ordre topologique du graphe vide). L'exception
+        porte un cycle trouvé dans son attribut `cycle`.
+        """
+        degres = {s: len(self._entrants[s]) for s in self._sommets}
+        file = deque(s for s, degre in degres.items() if degre == 0)
+        ordre = []
+
+        while file:
+            sommet = file.popleft()
+            ordre.append(sommet)
+            for voisin in self._adjacence[sommet]:
+                degres[voisin] -= 1
+                if degres[voisin] == 0:
+                    file.append(voisin)
+
+        if len(ordre) < len(self._sommets):
+            cycle = self.trouver_cycle()
+            raise GrapheCycliqueError(
+                "Aucun ordre topologique : le graphe contient un cycle ("
+                + " -> ".join(cycle) + ").",
+                cycle=cycle,
+            )
+        return ordre
 
     # Raccourcis Python : len(g) et "A" in g
     def __len__(self):

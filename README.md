@@ -29,6 +29,7 @@ python3 interface.py
 python3 -m unittest discover -s tests -v          # tous les tests
 python3 -m unittest tests.test_itineraire -v      # uniquement la partie D
 python3 -m unittest tests.test_contraintes -v     # uniquement la partie E
+python3 -m unittest tests.test_cycles -v          # uniquement la partie F (bonus)
 ```
 
 - **Sans interface** : les fonctionnalités s'essaient aussi dans l'interpréteur, lancé à la racine du projet :
@@ -48,6 +49,17 @@ python3 -m unittest tests.test_contraintes -v     # uniquement la partie E
 ([], inf)
 >>> g.intersection(Graphe.from_file("data/reseau2.txt")).arcs_en_triplets()
 [('A', 'B', 4), ('B', 'D', 5), ('C', 'B', 1)]
+>>> g.has_cycle()
+False
+>>> g.topological_sort()
+['A', 'H', 'C', 'B', 'D', 'E', 'F', 'G']
+>>> g2 = Graphe.from_file("data/reseau2.txt")
+>>> g2.has_cycle(), g2.trouver_cycle()
+(True, ['A', 'B', 'D', 'X', 'A'])
+>>> g2.topological_sort()
+Traceback (most recent call last):
+  ...
+graphe.exceptions.GrapheCycliqueError: Aucun ordre topologique : le graphe contient un cycle (A -> B -> D -> X -> A).
 ```
 
 ## Structure du projet
@@ -56,14 +68,16 @@ python3 -m unittest tests.test_contraintes -v     # uniquement la partie E
 graphe/             paquet principal
   sommet.py         classe Sommet (identifiant textuel unique, non vide)
   arc.py            classe Arc (origine, destination, poids >= 0)
-  graphe.py         classe Graphe (sommets + liste d'adjacence, analyse, Dijkstra, sommet interdit, intersection)
+  graphe.py         classe Graphe (sommets + liste d'adjacence, analyse, Dijkstra, sommet interdit,
+                    intersection, détection de cycle, tri topologique)
   lecture.py        lecture d'un graphe depuis un fichier texte (`Graphe.from_file`)
   exceptions.py     hiérarchie d'exceptions personnalisées
 interface.py        interface graphique Tkinter de démonstration
 requirements.txt    aucune dépendance pip (instructions pour Tkinter)
 data/reseau.txt     réseau du sujet (8 sommets, 11 arcs, H isolé)
-data/reseau2.txt    second graphe de test (5 sommets, 6 arcs)
-tests/              tests unittest (test_graphe, test_lecture, test_analyse, test_itineraire, test_contraintes)
+data/reseau2.txt    second graphe de test (5 sommets, 6 arcs, contient le cycle A -> B -> D -> X -> A)
+tests/              tests unittest (test_graphe, test_lecture, test_analyse, test_itineraire,
+                    test_contraintes, test_cycles)
 documentation/      notes de travail
 sujet/              énoncé
 ```
@@ -77,8 +91,8 @@ sujet/              énoncé
 | C | Analyse : degrés, prédécesseurs, successeurs | 2 | ✅ Terminée |
 | D | Plus court chemin (`shortest_path`, Dijkstra) | 4 | ✅ Terminée |
 | E | Sommet interdit et intersection de graphes | 3 | ✅ Terminée |
-| F | Bonus : détection de cycle / tri topologique | +2 | ⏳ Optionnel, à faire |
-| Tests | 8 tests minimum | – | ✅ 81 tests pour les parties A à E |
+| F | Bonus : détection de cycle **et** tri topologique (les deux options) | +2 | ✅ Terminée |
+| Tests | 8 tests minimum | – | ✅ 109 tests pour les parties A à F |
 | Livrables | Rapport PDF (2 à 4 pages), exemples d'exécution, second graphe de test | – | 🔶 Second graphe (`data/reseau2.txt`) et interface de démonstration (`interface.py`) faits ; rapport et exemples d'exécution à faire |
 
 ### Partie A (réalisée)
@@ -163,6 +177,39 @@ sujet/              énoncé
   - **Exemple** : `reseau.txt ∩ reseau2.txt` donne les sommets A, B, C, D et les arcs
     A → B (4), B → D (5), C → B (1). L'arc A → C n'est pas commun (poids 2 contre 3).
 
+### Partie F (bonus, réalisée : les deux options)
+
+- **Option 1 – `has_cycle()`** retourne `True` si le graphe contient au moins un cycle, `False` sinon.
+  Elle s'appuie sur **`trouver_cycle()`**, qui retourne le cycle trouvé sous forme de liste fermée
+  (`['A', 'B', 'D', 'X', 'A']`) ou `[]` si le graphe est acyclique.
+  - **Idée de l'algorithme** : parcours en profondeur (DFS) avec trois couleurs.
+    BLANC = pas encore visité, GRIS = en cours de visite (sur la branche explorée), NOIR = terminé.
+    Rencontrer un successeur **GRIS** signifie revenir vers un ancêtre de la branche en cours :
+    cet « arc arrière » ferme un cycle. Un successeur **NOIR** n'en crée pas : tout ce qui est
+    accessible depuis lui a déjà été exploré (cas du losange A → B → D, A → C → D, qui n'est pas un cycle).
+  - Le parcours repart de chaque sommet encore blanc : un cycle situé dans une partie non accessible
+    depuis le premier sommet est aussi trouvé.
+  - **Itératif** (pile explicite) : pas de `RecursionError` sur un long graphe (testé avec 5000 sommets).
+    Les sommets gris étant exactement ceux de la pile, le cycle se lit directement dans la pile.
+  - Une boucle `A → A` est un cycle (le modèle ne l'interdit pas). Le graphe vide et un graphe
+    de sommets isolés sont acycliques. Complexité O(|V| + |E|).
+- **Option 2 – `topological_sort()`** retourne un ordre topologique : pour tout arc u → v, u est avant v.
+  - **Idée de l'algorithme (Kahn)** : on place d'abord les sommets sans prédécesseur (degré entrant 0),
+    puis on « retire » leurs arcs sortants en décrémentant le degré entrant de leurs successeurs ;
+    un successeur qui tombe à 0 peut être placé à son tour. Si tous les sommets sont placés, l'ordre
+    est topologique ; sinon les sommets restants ont toujours un prédécesseur non placé, ce qui
+    n'est possible qu'en présence d'un cycle.
+  - Les degrés entrants viennent directement de `_entrants` (partie C) et sont décrémentés dans une
+    copie : le graphe n'est pas modifié. File FIFO initialisée dans l'ordre d'ajout : résultat
+    déterministe. Les sommets isolés (H) figurent dans l'ordre. Complexité O(|V| + |E|).
+  - **En présence d'un cycle** : exception `GrapheCycliqueError` (hérite de `GrapheError` et de
+    `ValueError`), dont l'attribut `cycle` contient un cycle trouvé et dont le message l'affiche.
+    Contrairement à « aucun chemin » (partie D), ce n'est pas un résultat normal : la demande n'a pas
+    de sens pour ce graphe, et une liste vide serait ambiguë (c'est l'ordre du graphe vide).
+- **Résultats** : `reseau.txt` est acyclique, ordre `A, H, C, B, D, E, F, G` ;
+  `reseau2.txt` contient le cycle `A → B → D → X → A`, donc aucun ordre topologique.
+- **Interface** : bouton « Cycle / ordre topologique » ; affiche l'ordre, ou le cycle mis en rouge sur le dessin.
+
 ### Interface graphique (`interface.py`)
 
 Petite démonstration Tkinter, en une seule classe `InterfaceGraphe`.
@@ -177,6 +224,8 @@ Petite démonstration Tkinter, en une seule classe `InterfaceGraphe`.
 - **Plus court chemin** : choix du départ, de l'arrivée et éventuellement d'un sommet interdit
   (`shortest_path` ou `shortest_path_avoiding`) ; le chemin est coloré en rouge et son coût affiché,
   ou « Aucun chemin » s'il n'en existe pas.
+- **Structure du graphe** (partie F) : le bouton « Cycle / ordre topologique » affiche un ordre
+  topologique, ou le cycle qui l'empêche, coloré en rouge sur le dessin.
 - **Séparation traitements / affichage** : l'interface ne contient aucune logique de graphe ;
   elle n'appelle que les méthodes publiques de `Graphe`. Les chemins sont construits avec `pathlib`
   à partir de `__file__`, le programme se lance donc depuis n'importe quel dossier.
@@ -193,7 +242,7 @@ Petite démonstration Tkinter, en une seule classe `InterfaceGraphe`.
 
 ### Tests
 
-81 tests `unittest`, tous passants :
+109 tests `unittest`, tous passants :
 
 - `tests/test_graphe.py` (17, partie A) : ajout d'un sommet et refus d'un doublon ou d'un identifiant vide ;
   refus d'un arc dont l'origine ou la destination est inconnue ; poids négatif ou non numérique refusé,
@@ -213,6 +262,13 @@ Petite démonstration Tkinter, en une seule classe `InterfaceGraphe`.
   interdit) des deux fichiers. Intersection de `reseau.txt` et `reseau2.txt` ; graphes initiaux non modifiés
   (même après modification du résultat) ; avec soi-même, un graphe vide, sans sommet commun ;
   arc de sens opposé, poids 2 et 2.0, sommet isolé commun, argument invalide.
+- `tests/test_cycles.py` (28, partie F) : cas négatifs (réseau du sujet, graphe vide, sommets isolés,
+  losange, arc vers un sommet déjà terminé) et positifs (`reseau2.txt`, réseau du sujet auquel on
+  ajoute l'arc G → A, cycle de deux sommets, boucle A → A, cycle non accessible depuis le premier
+  sommet) ; cycle retourné vérifié (fermé, arcs existants) ; chaîne de 5000 sommets ; graphe non modifié ;
+  ordre topologique exact sur `reseau.txt`, sommet isolé inclus, graphe vide, exception avec le cycle
+  sur `reseau2.txt` ; comparaison avec une recherche exhaustive des permutations sur 300 petits graphes
+  aléatoires (graine fixe) et cohérence `has_cycle` / `topological_sort`.
 
 ## Choix et décisions à reprendre dans le rapport
 
@@ -222,6 +278,8 @@ Petite démonstration Tkinter, en une seule classe `InterfaceGraphe`.
 - Partie B : une erreur rejette tout le fichier (aucun graphe partiel), avec le numéro de ligne dans l'exception.
 - Partie D : absence de chemin signalée par `([], math.inf)` plutôt que par une exception.
 - Partie E : sommet interdit égal au départ ou à l'arrivée → `([], math.inf)` ; intersection = nouveau graphe, arcs comparés avec leur poids.
+- Partie F : les deux options ; DFS à trois couleurs (itératif) pour le cycle, Kahn pour l'ordre topologique ;
+  absence d'ordre signalée par `GrapheCycliqueError` (avec le cycle), une boucle A → A compte comme un cycle.
 
 ## Ressources externes et assistance par IA
 
