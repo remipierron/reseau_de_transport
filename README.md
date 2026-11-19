@@ -8,7 +8,21 @@ Le sujet complet est dans [`sujet/projet.md`](sujet/projet.md).
 ## Environnement
 
 - **Python** : 3.15 (testé ; tout Python ≥ 3.7 convient, l'ordre d'insertion des `dict` étant utilisé).
-- **Installation** : aucune. Seule la bibliothèque standard est utilisée (aucune bibliothèque de graphes).
+- **Installation** : aucune avec pip. Seule la bibliothèque standard est utilisée (aucune bibliothèque
+  de graphes) ; `requirements.txt` ne contient donc que des commentaires.
+- **Tkinter** (uniquement pour l'interface graphique) : il fait partie de la bibliothèque standard, mais
+  certaines installations de Python le fournissent à part, et il ne s'installe pas avec pip :
+  - macOS (Homebrew) : `brew install python-tk@3.15` (adapter à la version de Python) ;
+  - Debian / Ubuntu : `sudo apt install python3-tk` ;
+  - Windows (Python de python.org) : inclus par défaut.
+
+  Vérification : `python3 -m tkinter` ouvre une petite fenêtre de test.
+- **Lancer l'interface graphique** (depuis la racine du projet) :
+
+```bash
+python3 interface.py
+```
+
 - **Lancer les tests** (depuis la racine du projet) :
 
 ```bash
@@ -16,8 +30,7 @@ python3 -m unittest discover -s tests -v          # tous les tests
 python3 -m unittest tests.test_itineraire -v      # uniquement la partie D
 ```
 
-- **Lancer le programme** : le point d'entrée (démonstration) sera ajouté avec les parties suivantes.
-  En attendant, les fonctionnalités s'essaient dans l'interpréteur, lancé à la racine du projet :
+- **Sans interface** : les fonctionnalités s'essaient aussi dans l'interpréteur, lancé à la racine du projet :
 
 ```python
 >>> from graphe import Graphe
@@ -39,6 +52,8 @@ graphe/             paquet principal
   graphe.py         classe Graphe (sommets + liste d'adjacence, analyse d'un sommet, Dijkstra)
   lecture.py        lecture d'un graphe depuis un fichier texte (`Graphe.from_file`)
   exceptions.py     hiérarchie d'exceptions personnalisées
+interface.py        interface graphique Tkinter de démonstration
+requirements.txt    aucune dépendance pip (instructions pour Tkinter)
 data/reseau.txt     réseau du sujet (8 sommets, 11 arcs, H isolé)
 data/reseau2.txt    second graphe de test (5 sommets, 6 arcs)
 tests/              tests unittest (test_graphe, test_lecture, test_analyse, test_itineraire)
@@ -57,7 +72,7 @@ sujet/              énoncé
 | E | Sommet interdit et intersection de graphes | 3 | ⏳ À faire |
 | F | Bonus : détection de cycle / tri topologique | +2 | ⏳ Optionnel, à faire |
 | Tests | 8 tests minimum | – | 🔶 59 tests écrits pour les parties A à D ; ceux de la partie E restent à écrire |
-| Livrables | Rapport PDF (2 à 4 pages), exemples d'exécution, second graphe de test | – | 🔶 Second graphe (`data/reseau2.txt`) fait ; rapport et exemples d'exécution à faire |
+| Livrables | Rapport PDF (2 à 4 pages), exemples d'exécution, second graphe de test | – | 🔶 Second graphe (`data/reseau2.txt`) et interface de démonstration (`interface.py`) faits ; rapport et exemples d'exécution à faire |
 
 ### Partie A (réalisée)
 
@@ -119,6 +134,23 @@ sujet/              énoncé
   de sommets exclus, que `shortest_path_avoiding` pourra réutiliser.
 - **Égalités de coût** : un compteur dans la file départage les ex æquo, le résultat est donc
   déterministe (même chemin à chaque exécution).
+
+### Interface graphique (`interface.py`)
+
+Petite démonstration Tkinter, en une seule classe `InterfaceGraphe`.
+
+- **Chargement** : `data/reseau.txt` est chargé au démarrage ; le bouton « Ouvrir un fichier… »
+  en charge un autre. Toute `GrapheError` s'affiche dans une boîte de dialogue, et en cas d'échec
+  le graphe précédent reste affiché.
+- **Dessin** : sommets placés régulièrement sur un cercle (`math.cos` / `math.sin`), arcs dessinés
+  en flèches avec leur poids. Deux arcs de sens opposés (A → B et B → A) sont légèrement décalés.
+- **Analyse d'un sommet** : choix dans une liste ou clic sur le sommet ; affiche le résultat
+  de `analyser_sommet` (degrés, prédécesseurs, successeurs).
+- **Plus court chemin** : choix du départ et de l'arrivée ; le chemin de `shortest_path` est
+  coloré en rouge et son coût affiché, ou « Aucun chemin » s'il n'en existe pas.
+- **Séparation traitements / affichage** : l'interface ne contient aucune logique de graphe ;
+  elle n'appelle que les méthodes publiques de `Graphe`. Les chemins sont construits avec `pathlib`
+  à partir de `__file__`, le programme se lance donc depuis n'importe quel dossier.
 
 ### Structures de données choisies
 
