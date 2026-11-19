@@ -4,7 +4,8 @@ Lancement (depuis la racine du projet) : python3 interface.py
 
 L'interface ne contient AUCUNE logique de graphe : elle se contente
 d'appeler les méthodes publiques de la classe Graphe (from_file, sommets,
-arcs_en_triplets, analyser_sommet, shortest_path) et d'afficher les résultats.
+arcs_en_triplets, analyser_sommet, shortest_path, shortest_path_avoiding)
+et d'afficher les résultats.
 Les erreurs (GrapheError) sont montrées dans une boîte de dialogue.
 """
 
@@ -25,6 +26,7 @@ RAYON_SOMMET = 20             # rayon d'un cercle représentant un sommet
 DECALAGE = 6                  # écart entre deux arcs opposés (A -> B et B -> A)
 COULEUR_NORMALE = "#4a6fa5"
 COULEUR_CHEMIN = "#d9534f"
+AUCUN = "(aucun)"            # choix « pas de sommet interdit »
 
 
 class InterfaceGraphe:
@@ -65,7 +67,7 @@ class InterfaceGraphe:
         self.choix_sommet.pack(side="left")
         ttk.Button(cadre_analyse, text="Analyser", command=self.analyser).pack(side="left", padx=6)
 
-        # Recherche d'itinéraire (partie D)
+        # Recherche d'itinéraire (parties D et E)
         cadre_chemin = ttk.LabelFrame(panneau, text="Plus court chemin", padding=6)
         cadre_chemin.pack(fill="x", pady=8)
         ttk.Label(cadre_chemin, text="Départ :").grid(row=0, column=0, sticky="w")
@@ -74,8 +76,11 @@ class InterfaceGraphe:
         ttk.Label(cadre_chemin, text="Arrivée :").grid(row=1, column=0, sticky="w")
         self.choix_arrivee = ttk.Combobox(cadre_chemin, state="readonly", width=12)
         self.choix_arrivee.grid(row=1, column=1, pady=2)
+        ttk.Label(cadre_chemin, text="Interdit :").grid(row=2, column=0, sticky="w")
+        self.choix_interdit = ttk.Combobox(cadre_chemin, state="readonly", width=12)
+        self.choix_interdit.grid(row=2, column=1, pady=2)
         ttk.Button(cadre_chemin, text="Calculer", command=self.calculer_chemin).grid(
-            row=2, column=0, columnspan=2, pady=4)
+            row=3, column=0, columnspan=2, pady=4)
 
         # Zone de texte où s'affichent les résultats
         self.resultat = tk.Text(panneau, width=34, height=14, state="disabled", wrap="word")
@@ -107,6 +112,8 @@ class InterfaceGraphe:
         for liste in (self.choix_sommet, self.choix_depart, self.choix_arrivee):
             liste["values"] = sommets
             liste.set(sommets[0] if sommets else "")
+        self.choix_interdit["values"] = [AUCUN] + sommets
+        self.choix_interdit.set(AUCUN)
         self.afficher("Graphe chargé.\nCliquez sur un sommet pour l'analyser.")
         self.dessiner()
 
@@ -185,18 +192,24 @@ class InterfaceGraphe:
         )
 
     def calculer_chemin(self):
-        """Appelle shortest_path et met le chemin trouvé en évidence sur le dessin."""
+        """Appelle shortest_path (ou shortest_path_avoiding si un sommet est
+        interdit) et met le chemin trouvé en évidence sur le dessin."""
         depart, arrivee = self.choix_depart.get(), self.choix_arrivee.get()
+        interdit = self.choix_interdit.get()
         try:
-            chemin, cout = self.graphe.shortest_path(depart, arrivee)
+            if interdit == AUCUN:
+                chemin, cout = self.graphe.shortest_path(depart, arrivee)
+            else:
+                chemin, cout = self.graphe.shortest_path_avoiding(depart, arrivee, interdit)
         except GrapheError as erreur:
             messagebox.showerror("Erreur", str(erreur))
             return
+        sans = "" if interdit == AUCUN else f" sans passer par {interdit}"
         if chemin:
-            self.afficher(f"Chemin de {depart} à {arrivee} :\n  {' -> '.join(chemin)}\n"
-                          f"Coût total : {cout:g}")
-        else:  # shortest_path retourne ([], inf) quand aucun chemin n'existe
-            self.afficher(f"Aucun chemin de {depart} à {arrivee}.")
+            self.afficher(f"Chemin de {depart} à {arrivee}{sans} :\n"
+                          f"  {' -> '.join(chemin)}\nCoût total : {cout:g}")
+        else:  # ([], inf) quand aucun chemin n'existe
+            self.afficher(f"Aucun chemin de {depart} à {arrivee}{sans}.")
         self.dessiner(chemin)
 
     def afficher(self, texte):

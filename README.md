@@ -28,6 +28,7 @@ python3 interface.py
 ```bash
 python3 -m unittest discover -s tests -v          # tous les tests
 python3 -m unittest tests.test_itineraire -v      # uniquement la partie D
+python3 -m unittest tests.test_contraintes -v     # uniquement la partie E
 ```
 
 - **Sans interface** : les fonctionnalités s'essaient aussi dans l'interpréteur, lancé à la racine du projet :
@@ -41,6 +42,12 @@ python3 -m unittest tests.test_itineraire -v      # uniquement la partie D
 ([], inf)
 >>> g.shortest_path("A", "A")      # départ = arrivée
 (['A'], 0)
+>>> g.shortest_path_avoiding("A", "G", "C")
+(['A', 'B', 'D', 'E', 'F', 'G'], 15)
+>>> g.shortest_path_avoiding("A", "G", "G")   # interdit = arrivée : impossible
+([], inf)
+>>> g.intersection(Graphe.from_file("data/reseau2.txt")).arcs_en_triplets()
+[('A', 'B', 4), ('B', 'D', 5), ('C', 'B', 1)]
 ```
 
 ## Structure du projet
@@ -49,14 +56,14 @@ python3 -m unittest tests.test_itineraire -v      # uniquement la partie D
 graphe/             paquet principal
   sommet.py         classe Sommet (identifiant textuel unique, non vide)
   arc.py            classe Arc (origine, destination, poids >= 0)
-  graphe.py         classe Graphe (sommets + liste d'adjacence, analyse d'un sommet, Dijkstra)
+  graphe.py         classe Graphe (sommets + liste d'adjacence, analyse, Dijkstra, sommet interdit, intersection)
   lecture.py        lecture d'un graphe depuis un fichier texte (`Graphe.from_file`)
   exceptions.py     hiérarchie d'exceptions personnalisées
 interface.py        interface graphique Tkinter de démonstration
 requirements.txt    aucune dépendance pip (instructions pour Tkinter)
 data/reseau.txt     réseau du sujet (8 sommets, 11 arcs, H isolé)
 data/reseau2.txt    second graphe de test (5 sommets, 6 arcs)
-tests/              tests unittest (test_graphe, test_lecture, test_analyse, test_itineraire)
+tests/              tests unittest (test_graphe, test_lecture, test_analyse, test_itineraire, test_contraintes)
 documentation/      notes de travail
 sujet/              énoncé
 ```
@@ -69,9 +76,9 @@ sujet/              énoncé
 | B | Lecture de fichier (`from_file`) et robustesse | 2 | ✅ Terminée |
 | C | Analyse : degrés, prédécesseurs, successeurs | 2 | ✅ Terminée |
 | D | Plus court chemin (`shortest_path`, Dijkstra) | 4 | ✅ Terminée |
-| E | Sommet interdit et intersection de graphes | 3 | ⏳ À faire |
+| E | Sommet interdit et intersection de graphes | 3 | ✅ Terminée |
 | F | Bonus : détection de cycle / tri topologique | +2 | ⏳ Optionnel, à faire |
-| Tests | 8 tests minimum | – | 🔶 59 tests écrits pour les parties A à D ; ceux de la partie E restent à écrire |
+| Tests | 8 tests minimum | – | ✅ 81 tests pour les parties A à E |
 | Livrables | Rapport PDF (2 à 4 pages), exemples d'exécution, second graphe de test | – | 🔶 Second graphe (`data/reseau2.txt`) et interface de démonstration (`interface.py`) faits ; rapport et exemples d'exécution à faire |
 
 ### Partie A (réalisée)
@@ -135,6 +142,27 @@ sujet/              énoncé
 - **Égalités de coût** : un compteur dans la file départage les ex æquo, le résultat est donc
   déterministe (même chemin à chaque exécution).
 
+### Partie E (réalisée)
+
+- **`shortest_path_avoiding(depart, arrivee, interdit)`** retourne `(chemin, cout)` comme
+  `shortest_path`, en réutilisant `_dijkstra` avec l'ensemble de sommets exclus `{interdit}`.
+  - **Interdit = départ ou arrivée** : `([], inf)`. Un chemin contient toujours ses deux extrémités,
+    donc aucun chemin ne peut éviter ce sommet ; on le traite comme « aucun chemin » (résultat
+    normal, pas d'exception), par cohérence avec la partie D. Cela vaut aussi si départ = arrivée = interdit.
+  - **Départ = arrivée ≠ interdit** : `([depart], 0)`.
+  - **Sommet inconnu** (départ, arrivée ou interdit) : `SommetInconnuError` ; un interdit inconnu
+    est probablement une faute de frappe, il vaut mieux la signaler que l'ignorer.
+  - Le graphe n'est pas modifié : le sommet interdit est seulement sauté pendant le parcours.
+  - **Exemples (A → G)** : sans C, `A → B → D → E → F → G` (15) ; sans D, `A → C → E → F → G` (16) ;
+    sans F, `A → C → B → G` (18, l'arc direct B → G devient utile).
+- **`intersection(autre_graphe)`** retourne un **nouveau** `Graphe` :
+  - sommets présents dans les deux graphes (ordre de `self`) ;
+  - arcs dont l'origine, la destination **et** le poids sont identiques dans les deux graphes ;
+  - les graphes d'origine ne sont pas modifiés (nouveaux objets `Sommet` et `Arc`) ;
+  - `TypeError` si l'argument n'est pas un `Graphe` ; complexité O(|V| + |E|).
+  - **Exemple** : `reseau.txt ∩ reseau2.txt` donne les sommets A, B, C, D et les arcs
+    A → B (4), B → D (5), C → B (1). L'arc A → C n'est pas commun (poids 2 contre 3).
+
 ### Interface graphique (`interface.py`)
 
 Petite démonstration Tkinter, en une seule classe `InterfaceGraphe`.
@@ -146,8 +174,9 @@ Petite démonstration Tkinter, en une seule classe `InterfaceGraphe`.
   en flèches avec leur poids. Deux arcs de sens opposés (A → B et B → A) sont légèrement décalés.
 - **Analyse d'un sommet** : choix dans une liste ou clic sur le sommet ; affiche le résultat
   de `analyser_sommet` (degrés, prédécesseurs, successeurs).
-- **Plus court chemin** : choix du départ et de l'arrivée ; le chemin de `shortest_path` est
-  coloré en rouge et son coût affiché, ou « Aucun chemin » s'il n'en existe pas.
+- **Plus court chemin** : choix du départ, de l'arrivée et éventuellement d'un sommet interdit
+  (`shortest_path` ou `shortest_path_avoiding`) ; le chemin est coloré en rouge et son coût affiché,
+  ou « Aucun chemin » s'il n'en existe pas.
 - **Séparation traitements / affichage** : l'interface ne contient aucune logique de graphe ;
   elle n'appelle que les méthodes publiques de `Graphe`. Les chemins sont construits avec `pathlib`
   à partir de `__file__`, le programme se lance donc depuis n'importe quel dossier.
@@ -164,7 +193,7 @@ Petite démonstration Tkinter, en une seule classe `InterfaceGraphe`.
 
 ### Tests
 
-59 tests `unittest`, tous passants :
+81 tests `unittest`, tous passants :
 
 - `tests/test_graphe.py` (17, partie A) : ajout d'un sommet et refus d'un doublon ou d'un identifiant vide ;
   refus d'un arc dont l'origine ou la destination est inconnue ; poids négatif ou non numérique refusé,
@@ -178,6 +207,12 @@ Petite démonstration Tkinter, en une seule classe `InterfaceGraphe`.
   départ = arrivée, aucun chemin (vers/depuis H, sens inverse), sommet inconnu, graphe non modifié,
   graphe avec cycle (`reseau2.txt`), poids nuls et décimaux, piège pour un algorithme glouton,
   cohérence chemin/coût, et comparaison avec une recherche exhaustive sur tous les couples des deux fichiers.
+- `tests/test_contraintes.py` (22, partie E) : chemins A → G en évitant C, D, F ou H ; sommet interdit
+  rendant l'arrivée inaccessible ; interdit = départ ou arrivée ; départ = arrivée ; sommets inconnus ;
+  graphe non modifié ; comparaison avec une recherche exhaustive sur tous les triplets (départ, arrivée,
+  interdit) des deux fichiers. Intersection de `reseau.txt` et `reseau2.txt` ; graphes initiaux non modifiés
+  (même après modification du résultat) ; avec soi-même, un graphe vide, sans sommet commun ;
+  arc de sens opposé, poids 2 et 2.0, sommet isolé commun, argument invalide.
 
 ## Choix et décisions à reprendre dans le rapport
 
@@ -186,6 +221,7 @@ Petite démonstration Tkinter, en une seule classe `InterfaceGraphe`.
 - Poids non négatifs, donc Dijkstra est applicable.
 - Partie B : une erreur rejette tout le fichier (aucun graphe partiel), avec le numéro de ligne dans l'exception.
 - Partie D : absence de chemin signalée par `([], math.inf)` plutôt que par une exception.
+- Partie E : sommet interdit égal au départ ou à l'arrivée → `([], math.inf)` ; intersection = nouveau graphe, arcs comparés avec leur poids.
 
 ## Ressources externes et assistance par IA
 

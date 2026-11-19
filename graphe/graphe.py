@@ -198,12 +198,68 @@ class Graphe:
         """
         return self._dijkstra(depart, arrivee)
 
+    # ------------------------------------------------------------------
+    # Contraintes et comparaison (partie E)
+    # ------------------------------------------------------------------
+    def shortest_path_avoiding(self, depart, arrivee, interdit):
+        """Plus court chemin de `depart` à `arrivee` sans passer par `interdit`.
+
+        Retourne (chemin, cout), comme shortest_path.
+
+        Comportement choisi :
+        - `interdit` est le départ ou l'arrivée : ([], math.inf). Un chemin
+          contient toujours ses deux extrémités ; aucun chemin ne peut donc
+          éviter ce sommet. C'est cohérent avec shortest_path : « aucun
+          itinéraire possible » est un résultat normal, pas une exception.
+          Cela vaut aussi quand départ = arrivée = interdit.
+        - `interdit` inconnu : SommetInconnuError (sans doute une faute de
+          frappe, qu'il vaut mieux signaler que d'ignorer).
+        - départ ou arrivée inconnu : SommetInconnuError, comme shortest_path.
+
+        Le graphe n'est pas modifié : le sommet interdit est simplement
+        ignoré pendant le parcours de Dijkstra.
+        """
+        self._obtenir_sommet(depart)
+        self._obtenir_sommet(arrivee)
+        self._obtenir_sommet(interdit)
+        if interdit in (depart, arrivee):
+            return [], math.inf
+        return self._dijkstra(depart, arrivee, exclus=frozenset([interdit]))
+
+    def intersection(self, autre_graphe):
+        """Nouveau graphe formé des sommets communs et des arcs communs.
+
+        - Sommet commun : identifiant présent dans les deux graphes.
+        - Arc commun : même origine, même destination ET même poids dans
+          les deux graphes (les deux extrémités sont alors forcément communes).
+        - L'ordre des sommets et des arcs suit celui de `self`.
+        - Les deux graphes d'origine ne sont pas modifiés : le résultat est
+          construit avec ses propres objets Sommet et Arc.
+
+        Lève TypeError si `autre_graphe` n'est pas un Graphe.
+        Complexité : O(|V| + |E|) grâce aux dictionnaires (tests en O(1)).
+        """
+        if not isinstance(autre_graphe, Graphe):
+            raise TypeError(
+                f"intersection attend un Graphe, reçu : {type(autre_graphe).__name__}."
+            )
+        resultat = Graphe()
+        for identifiant in self._sommets:
+            if autre_graphe.contient_sommet(identifiant):
+                resultat.ajouter_sommet(identifiant)
+
+        for origine, destination, poids in self.arcs_en_triplets():
+            if (autre_graphe.contient_arc(origine, destination)
+                    and autre_graphe.get_arc(origine, destination).poids == poids):
+                resultat.ajouter_arc(origine, destination, poids)
+        return resultat
+
     def _dijkstra(self, depart, arrivee, exclus=frozenset()):
         """Dijkstra avec file de priorité (heapq), arrêt dès que `arrivee` est fixée.
 
         `exclus` : sommets que le chemin n'a pas le droit de traverser
-        (prévu pour shortest_path_avoiding, partie E). Le départ et l'arrivée
-        ne sont jamais filtrés ici : c'est à l'appelant de décider du
+        (utilisé par shortest_path_avoiding, partie E). Le départ et l'arrivée
+        ne sont jamais filtrés ici : c'est l'appelant qui décide du
         comportement si l'un d'eux est interdit.
 
         Validité : les poids sont >= 0 (garanti par valider_poids). Quand un
