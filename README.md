@@ -12,10 +12,23 @@ Le sujet complet est dans [`sujet/projet.md`](sujet/projet.md).
 - **Lancer les tests** (depuis la racine du projet) :
 
 ```bash
-python3 -m unittest
+python3 -m unittest discover -s tests -v          # tous les tests
+python3 -m unittest tests.test_itineraire -v      # uniquement la partie D
 ```
 
 - **Lancer le programme** : le point d'entrée (démonstration) sera ajouté avec les parties suivantes.
+  En attendant, les fonctionnalités s'essaient dans l'interpréteur, lancé à la racine du projet :
+
+```python
+>>> from graphe import Graphe
+>>> g = Graphe.from_file("data/reseau.txt")
+>>> g.shortest_path("A", "G")
+(['A', 'C', 'B', 'D', 'E', 'F', 'G'], 14)
+>>> g.shortest_path("A", "H")      # H est isolé : aucun chemin
+([], inf)
+>>> g.shortest_path("A", "A")      # départ = arrivée
+(['A'], 0)
+```
 
 ## Structure du projet
 
@@ -23,12 +36,12 @@ python3 -m unittest
 graphe/             paquet principal
   sommet.py         classe Sommet (identifiant textuel unique, non vide)
   arc.py            classe Arc (origine, destination, poids >= 0)
-  graphe.py         classe Graphe (sommets + liste d'adjacence, analyse d'un sommet)
+  graphe.py         classe Graphe (sommets + liste d'adjacence, analyse d'un sommet, Dijkstra)
   lecture.py        lecture d'un graphe depuis un fichier texte (`Graphe.from_file`)
   exceptions.py     hiérarchie d'exceptions personnalisées
 data/reseau.txt     réseau du sujet (8 sommets, 11 arcs, H isolé)
 data/reseau2.txt    second graphe de test (5 sommets, 6 arcs)
-tests/              tests unittest
+tests/              tests unittest (test_graphe, test_lecture, test_analyse, test_itineraire)
 documentation/      notes de travail
 sujet/              énoncé
 ```
@@ -40,10 +53,10 @@ sujet/              énoncé
 | A | Modélisation orientée objet | 3 | ✅ Terminée |
 | B | Lecture de fichier (`from_file`) et robustesse | 2 | ✅ Terminée |
 | C | Analyse : degrés, prédécesseurs, successeurs | 2 | ✅ Terminée |
-| D | Plus court chemin (`shortest_path`, Dijkstra) | 4 | ⏳ À faire |
+| D | Plus court chemin (`shortest_path`, Dijkstra) | 4 | ✅ Terminée |
 | E | Sommet interdit et intersection de graphes | 3 | ⏳ À faire |
 | F | Bonus : détection de cycle / tri topologique | +2 | ⏳ Optionnel, à faire |
-| Tests | 8 tests minimum | – | 🔶 44 tests écrits pour les parties A à C ; ceux des parties D et E restent à écrire |
+| Tests | 8 tests minimum | – | 🔶 59 tests écrits pour les parties A à D ; ceux de la partie E restent à écrire |
 | Livrables | Rapport PDF (2 à 4 pages), exemples d'exécution, second graphe de test | – | 🔶 Second graphe (`data/reseau2.txt`) fait ; rapport et exemples d'exécution à faire |
 
 ### Partie A (réalisée)
@@ -84,6 +97,29 @@ sujet/              énoncé
 - Un sommet inconnu lève `SommetInconnuError`.
 - Les listes retournées sont des copies : les modifier ne modifie pas le graphe.
 
+### Partie D (réalisée)
+
+- **Méthode** : `shortest_path(depart, arrivee)` retourne un tuple `(chemin, cout)` :
+  la liste des sommets de `depart` à `arrivee` inclus, et la somme des poids.
+- **Cas particuliers** :
+  - départ = arrivée : `(["A"], 0)` (chemin trivial, y compris pour le sommet isolé H) ;
+  - aucun chemin : `([], math.inf)`. C'est un résultat normal, pas une erreur : pas d'exception,
+    le tuple se déballe toujours de la même façon et `if not chemin` suffit pour tester ;
+  - sommet inconnu : `SommetInconnuError`.
+- **Algorithme** : Dijkstra avec une file de priorité (`heapq`), arrêt dès que l'arrivée est
+  extraite de la file, reconstruction du chemin par un dictionnaire des prédécesseurs.
+  Complexité O((|V| + |E|) log |V|).
+- **Pourquoi Dijkstra convient** : tous les poids sont ≥ 0 (vérifié par `valider_poids`).
+  Le sommet extrait de la file a le plus petit coût provisoire ; comme un détour ne peut
+  qu'ajouter un coût positif ou nul, ce coût est définitif. Avec un poids négatif, ce
+  raisonnement tomberait (il faudrait Bellman-Ford).
+- **Résultat A → G** : `A → C → B → D → E → F → G`, coût **14** (2 + 1 + 5 + 2 + 3 + 1).
+  L'arc direct `B → G` (15) n'est pas retenu.
+- **Préparation de la partie E** : la méthode interne `_dijkstra` accepte déjà un ensemble
+  de sommets exclus, que `shortest_path_avoiding` pourra réutiliser.
+- **Égalités de coût** : un compteur dans la file départage les ex æquo, le résultat est donc
+  déterministe (même chemin à chaque exécution).
+
 ### Structures de données choisies
 
 - `_sommets` : `dict` identifiant → `Sommet`. Test de présence et détection des doublons en O(1),
@@ -96,7 +132,7 @@ sujet/              énoncé
 
 ### Tests
 
-44 tests `unittest`, tous passants :
+59 tests `unittest`, tous passants :
 
 - `tests/test_graphe.py` (17, partie A) : ajout d'un sommet et refus d'un doublon ou d'un identifiant vide ;
   refus d'un arc dont l'origine ou la destination est inconnue ; poids négatif ou non numérique refusé,
@@ -106,6 +142,10 @@ sujet/              énoncé
 - `tests/test_analyse.py` (9, partie C) : degrés, prédécesseurs et successeurs de plusieurs sommets,
   sommet isolé, sans prédécesseur ou sans successeur, sommet inconnu, somme des degrés,
   résultat modifiable sans effet sur le graphe.
+- `tests/test_itineraire.py` (15, partie D) : chemin A → G (coût 14), détour moins cher qu'un arc direct,
+  départ = arrivée, aucun chemin (vers/depuis H, sens inverse), sommet inconnu, graphe non modifié,
+  graphe avec cycle (`reseau2.txt`), poids nuls et décimaux, piège pour un algorithme glouton,
+  cohérence chemin/coût, et comparaison avec une recherche exhaustive sur tous les couples des deux fichiers.
 
 ## Choix et décisions à reprendre dans le rapport
 
@@ -113,6 +153,7 @@ sujet/              énoncé
 - Exceptions personnalisées, avec héritage de `ValueError` / `KeyError` quand c'est pertinent.
 - Poids non négatifs, donc Dijkstra est applicable.
 - Partie B : une erreur rejette tout le fichier (aucun graphe partiel), avec le numéro de ligne dans l'exception.
+- Partie D : absence de chemin signalée par `([], math.inf)` plutôt que par une exception.
 
 ## Ressources externes et assistance par IA
 
