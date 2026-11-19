@@ -1,0 +1,2 @@
+# Aucune dépendance externe : le projet n'utilise que la bibliothèque standard Python (math, unittest).
+# Tests : python -m unittest
