@@ -3,8 +3,12 @@
 from .arc import Arc
 from .exceptions import (
     ArcExistantError,
+    FichierGrapheError,
+    FichierIntrouvableError,
+    FormatFichierError,
     GrapheError,
     IdentifiantInvalideError,
+    LigneMalFormeeError,
     PoidsInvalideError,
     SommetExistantError,
     SommetInconnuError,
@@ -22,4 +26,8 @@ __all__ = [
     "SommetInconnuError",
     "ArcExistantError",
     "PoidsInvalideError",
+    "LigneMalFormeeError",
+    "FichierGrapheError",
+    "FichierIntrouvableError",
+    "FormatFichierError",
 ]

@@ -11,6 +11,11 @@ Structures de données choisies
     si l'arc A -> B existe déjà (interdiction des doublons) et
     d'énumérer rapidement les successeurs (utile pour Dijkstra).
     Un sommet isolé a simplement un dict interne vide.
+- self._entrants : dict  identifiant -> dict(identifiant_origine -> Arc)
+    Liste d'adjacence inverse (ajoutée pour la partie C). Elle donne
+    les prédécesseurs et le degré entrant en O(1), au lieu de parcourir
+    tous les arcs du graphe. Coût : chaque arc est référencé deux fois
+    (mais l'objet Arc n'existe qu'une fois en mémoire).
 
 Aucune méthode de cette classe n'appelle input() ni print() :
 elles retournent des valeurs ou lèvent des exceptions.
@@ -31,6 +36,18 @@ class Graphe:
     def __init__(self):
         self._sommets = {}
         self._adjacence = {}
+        self._entrants = {}
+
+    @classmethod
+    def from_file(cls, chemin):
+        """Construit un graphe à partir d'un fichier texte (voir graphe/lecture.py).
+
+        Le fichier est rejeté en entier à la première erreur.
+        """
+        # Import local : lecture.py importe déjà Graphe, un import en haut
+        # de ce fichier créerait un import circulaire.
+        from .lecture import lire_graphe
+        return lire_graphe(chemin)
 
     # ------------------------------------------------------------------
     # Ajout
@@ -48,6 +65,7 @@ class Graphe:
             )
         self._sommets[sommet.identifiant] = sommet
         self._adjacence[sommet.identifiant] = {}
+        self._entrants[sommet.identifiant] = {}
         return sommet
 
     def ajouter_arc(self, origine, destination, poids):
@@ -69,6 +87,7 @@ class Graphe:
                 f"L'arc {s_origine} -> {s_destination} existe déjà."
             )
         self._adjacence[s_origine.identifiant][s_destination.identifiant] = arc
+        self._entrants[s_destination.identifiant][s_origine.identifiant] = arc
         return arc
 
     # ------------------------------------------------------------------
@@ -113,6 +132,46 @@ class Graphe:
 
     def nombre_arcs(self):
         return sum(len(voisins) for voisins in self._adjacence.values())
+
+    # ------------------------------------------------------------------
+    # Analyse d'un sommet (partie C)
+    # Toutes ces méthodes lèvent SommetInconnuError si le sommet n'existe pas.
+    # Elles retournent de nouvelles listes : les modifier ne modifie pas le graphe.
+    # ------------------------------------------------------------------
+    def successeurs(self, identifiant):
+        """Identifiants des sommets atteints par un arc partant de `identifiant`."""
+        self._obtenir_sommet(identifiant)
+        return list(self._adjacence[identifiant])
+
+    def predecesseurs(self, identifiant):
+        """Identifiants des sommets ayant un arc vers `identifiant`."""
+        self._obtenir_sommet(identifiant)
+        return list(self._entrants[identifiant])
+
+    def degre_sortant(self, identifiant):
+        self._obtenir_sommet(identifiant)
+        return len(self._adjacence[identifiant])
+
+    def degre_entrant(self, identifiant):
+        self._obtenir_sommet(identifiant)
+        return len(self._entrants[identifiant])
+
+    def degre_total(self, identifiant):
+        return self.degre_entrant(identifiant) + self.degre_sortant(identifiant)
+
+    def est_isole(self, identifiant):
+        return self.degre_total(identifiant) == 0
+
+    def analyser_sommet(self, identifiant):
+        """Regroupe toutes les informations d'un sommet dans un dictionnaire."""
+        return {
+            "sommet": identifiant,
+            "degre_entrant": self.degre_entrant(identifiant),
+            "degre_sortant": self.degre_sortant(identifiant),
+            "degre_total": self.degre_total(identifiant),
+            "predecesseurs": self.predecesseurs(identifiant),
+            "successeurs": self.successeurs(identifiant),
+        }
 
     # Raccourcis Python : len(g) et "A" in g
     def __len__(self):

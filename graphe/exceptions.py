@@ -32,3 +32,46 @@ class ArcExistantError(GrapheError):
 
 class PoidsInvalideError(GrapheError, ValueError):
     """Le poids d'un arc n'est pas un nombre positif ou nul."""
+
+
+# ----------------------------------------------------------------------
+# Erreurs de lecture de fichier (partie B)
+# ----------------------------------------------------------------------
+class LigneMalFormeeError(GrapheError, ValueError):
+    """Une ligne du fichier ne respecte pas le format attendu."""
+
+
+class FichierGrapheError(GrapheError):
+    """Classe de base des erreurs liées à la lecture d'un fichier de graphe."""
+
+
+class FichierIntrouvableError(FichierGrapheError, FileNotFoundError):
+    """Le fichier demandé n'existe pas."""
+
+
+class FormatFichierError(FichierGrapheError):
+    """Le contenu du fichier est invalide.
+
+    Attributs utiles pour l'appelant :
+    - chemin        : fichier concerné
+    - numero_ligne  : numéro de la ligne fautive (None si l'erreur est globale)
+    - ligne         : contenu brut de la ligne fautive
+    La cause précise (poids invalide, sommet inconnu, ...) est
+    disponible dans __cause__.
+    """
+
+    def __init__(self, message, chemin=None, numero_ligne=None, ligne=None):
+        self.message = message
+        self.chemin = chemin
+        self.numero_ligne = numero_ligne
+        self.ligne = ligne
+        super().__init__(self._construire_message())
+
+    def _construire_message(self):
+        lieu = str(self.chemin) if self.chemin is not None else "fichier"
+        if self.numero_ligne is not None:
+            lieu += f", ligne {self.numero_ligne}"
+        texte = f"{lieu} : {self.message}"
+        if self.ligne is not None:
+            texte += f" (ligne lue : {self.ligne!r})"
+        return texte

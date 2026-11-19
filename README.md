@@ -23,9 +23,11 @@ python3 -m unittest
 graphe/             paquet principal
   sommet.py         classe Sommet (identifiant textuel unique, non vide)
   arc.py            classe Arc (origine, destination, poids >= 0)
-  graphe.py         classe Graphe (sommets + liste d'adjacence)
+  graphe.py         classe Graphe (sommets + liste d'adjacence, analyse d'un sommet)
+  lecture.py        lecture d'un graphe depuis un fichier texte (`Graphe.from_file`)
   exceptions.py     hiérarchie d'exceptions personnalisées
 data/reseau.txt     réseau du sujet (8 sommets, 11 arcs, H isolé)
+data/reseau2.txt    second graphe de test (5 sommets, 6 arcs)
 tests/              tests unittest
 documentation/      notes de travail
 sujet/              énoncé
@@ -36,13 +38,13 @@ sujet/              énoncé
 | Partie | Contenu | Points | État |
 |---|---|---|---|
 | A | Modélisation orientée objet | 3 | ✅ Terminée |
-| B | Lecture de fichier (`from_file`) et robustesse | 2 | ⏳ À faire (le fichier `reseau.txt` est déjà créé) |
-| C | Analyse : degrés, prédécesseurs, successeurs | 2 | ⏳ À faire |
+| B | Lecture de fichier (`from_file`) et robustesse | 2 | ✅ Terminée |
+| C | Analyse : degrés, prédécesseurs, successeurs | 2 | ✅ Terminée |
 | D | Plus court chemin (`shortest_path`, Dijkstra) | 4 | ⏳ À faire |
 | E | Sommet interdit et intersection de graphes | 3 | ⏳ À faire |
 | F | Bonus : détection de cycle / tri topologique | +2 | ⏳ Optionnel, à faire |
-| Tests | 8 tests minimum | – | 🔶 17 tests écrits pour la partie A ; ceux des parties B à E restent à écrire |
-| Livrables | Rapport PDF (2 à 4 pages), exemples d'exécution, second graphe de test | – | ⏳ À faire |
+| Tests | 8 tests minimum | – | 🔶 44 tests écrits pour les parties A à C ; ceux des parties D et E restent à écrire |
+| Livrables | Rapport PDF (2 à 4 pages), exemples d'exécution, second graphe de test | – | 🔶 Second graphe (`data/reseau2.txt`) fait ; rapport et exemples d'exécution à faire |
 
 ### Partie A (réalisée)
 
@@ -62,6 +64,26 @@ sujet/              énoncé
 - **Séparation traitements / affichage** : aucune méthode n'appelle `input()` ni `print()` ;
   elles retournent des valeurs ou lèvent des exceptions.
 
+### Partie B (réalisée)
+
+- **Méthode** : `Graphe.from_file(chemin)` (chemin en `str` ou `Path`), qui s'appuie sur
+  `lire_graphe` dans `graphe/lecture.py`.
+- **Format** : première ligne utile `Sommets: A, B, C`, puis une ligne par arc `origine;destination;poids`.
+  Les lignes vides et celles commençant par `#` sont ignorées ; les espaces autour des valeurs sont tolérés.
+- **Politique d'erreur** : le fichier est **rejeté en entier** à la première erreur, car un réseau
+  chargé à moitié pourrait donner de faux itinéraires. L'exception porte le numéro et le contenu de la ligne fautive.
+- **Exceptions** : `FichierIntrouvableError` (fichier absent, hérite aussi de `FileNotFoundError`),
+  `FichierGrapheError` (fichier illisible : dossier, droits), `FormatFichierError` (contenu invalide,
+  avec `numero_ligne` et la cause d'origine en `__cause__`), `LigneMalFormeeError` (ligne mal structurée),
+  en plus des erreurs de la partie A (doublon, sommet inconnu, poids invalide) qui sont réutilisées.
+
+### Partie C (réalisée)
+
+- **Méthodes de `Graphe`** : `successeurs`, `predecesseurs`, `degre_entrant`, `degre_sortant`,
+  `degre_total`, `est_isole`, `analyser_sommet` (dictionnaire regroupant toutes ces informations).
+- Un sommet inconnu lève `SommetInconnuError`.
+- Les listes retournées sont des copies : les modifier ne modifie pas le graphe.
+
 ### Structures de données choisies
 
 - `_sommets` : `dict` identifiant → `Sommet`. Test de présence et détection des doublons en O(1),
@@ -69,20 +91,28 @@ sujet/              énoncé
 - `_adjacence` : `dict` identifiant → `dict` (destination → `Arc`). Liste d'adjacence : savoir si
   l'arc A → B existe est en O(1) et l'énumération des successeurs est directe, ce qui servira à Dijkstra.
   Un sommet isolé a simplement un dictionnaire interne vide.
+- `_entrants` : pour chaque sommet, ses prédécesseurs, afin de calculer `predecesseurs` et
+  `degre_entrant` sans parcourir tout le graphe.
 
 ### Tests
 
-`tests/test_graphe.py` contient 17 tests `unittest`, tous passants :
-ajout d'un sommet et refus d'un doublon ou d'un identifiant vide ; refus d'un arc dont l'origine ou
-la destination est inconnue ; poids négatif ou non numérique refusé, poids nul accepté ;
-arc en double refusé même avec un autre poids ; non-symétrie des arcs ; sommet isolé.
+44 tests `unittest`, tous passants :
+
+- `tests/test_graphe.py` (17, partie A) : ajout d'un sommet et refus d'un doublon ou d'un identifiant vide ;
+  refus d'un arc dont l'origine ou la destination est inconnue ; poids négatif ou non numérique refusé,
+  poids nul accepté ; arc en double refusé même avec un autre poids ; non-symétrie des arcs ; sommet isolé.
+- `tests/test_lecture.py` (18, partie B) : lecture des deux fichiers fournis ; fichiers invalides
+  (numéro de ligne et cause vérifiés), créés dans un dossier temporaire pour garder `data/` propre.
+- `tests/test_analyse.py` (9, partie C) : degrés, prédécesseurs et successeurs de plusieurs sommets,
+  sommet isolé, sans prédécesseur ou sans successeur, sommet inconnu, somme des degrés,
+  résultat modifiable sans effet sur le graphe.
 
 ## Choix et décisions à reprendre dans le rapport
 
 - Arcs multiples interdits (choix du sujet).
 - Exceptions personnalisées, avec héritage de `ValueError` / `KeyError` quand c'est pertinent.
 - Poids non négatifs, donc Dijkstra est applicable.
-- Pour la partie B, il reste à décider et à documenter si une erreur rejette tout le fichier ou seulement la ligne fautive.
+- Partie B : une erreur rejette tout le fichier (aucun graphe partiel), avec le numéro de ligne dans l'exception.
 
 ## Ressources externes et assistance par IA
 
