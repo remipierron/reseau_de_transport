@@ -7,7 +7,8 @@ Le sujet complet est dans [`sujet/projet.md`](sujet/projet.md).
 
 ## Environnement
 
-- **Python** : 3.15 (testé ; tout Python ≥ 3.7 convient, l'ordre d'insertion des `dict` étant utilisé).
+- **Python** : testé en local avec Python 3.15 et en intégration continue avec Python 3.15
+  (tout Python ≥ 3.7 convient, l'ordre d'insertion des `dict` étant utilisé).
 - **Installation** : aucune avec pip. Seule la bibliothèque standard est utilisée (aucune bibliothèque
   de graphes) ; `requirements.txt` ne contient donc que des commentaires.
 - **Tkinter** (uniquement pour l'interface graphique) : il fait partie de la bibliothèque standard, mais
@@ -78,7 +79,6 @@ data/reseau.txt     réseau du sujet (8 sommets, 11 arcs, H isolé)
 data/reseau2.txt    second graphe de test (5 sommets, 6 arcs, contient le cycle A -> B -> D -> X -> A)
 tests/              tests unittest (test_graphe, test_lecture, test_analyse, test_itineraire,
                     test_contraintes, test_cycles)
-documentation/      notes de travail
 sujet/              énoncé
 ```
 
