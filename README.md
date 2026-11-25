@@ -283,6 +283,30 @@ Petite démonstration Tkinter, en une seule classe `InterfaceGraphe`.
 
 ## Ressources externes et assistance par IA
 
-Conformément au sujet, voici l'assistance utilisée :
+Conformément au sujet, voici l'assistance utilisée.
 
 - **Outil** : Claude Code (Opus 5.5, Sonnet 5.5).
+- **Ressources externes** : documentation officielle de Python (`heapq`, `unittest`, `pathlib`, `tkinter`).
+
+### Usage effectué
+
+- **Compréhension du sujet** : reformulation des consignes, clarification des règles de gestion
+  et des cas limites à traiter (sommet isolé, départ = arrivée, sommet interdit, etc.).
+- **Plan de projet** : découpage du travail par partie (A à F, tests, livrables) et ordre de réalisation.
+- **Développement** : aide à l'écriture d'un code propre et optimisé (conception objet, choix des
+  structures de données, algorithmes de Dijkstra, de détection de cycle et de tri topologique),
+  ainsi que des tests associés.
+- **Vérification de conformité** : contrôle que chaque partie et chaque livrable répondent aux consignes du sujet.
+
+### Parties concernées
+
+| Partie | Assistance par IA |
+|---|---|
+| Compréhension du sujet et plan | Oui |
+| A à F (code) | Oui : conception, écriture et optimisation du code |
+| Tests | Oui : choix des cas et écriture des tests |
+| Interface graphique | Oui |
+| README | Oui : rédaction et vérification de conformité |
+
+J'ai relu, exécuté et testé l'ensemble du code. Je suis en mesure d'expliquer chaque partie
+(conception, structures de données, algorithmes) et de la modifier.
