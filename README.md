@@ -85,6 +85,7 @@ graphe/             paquet principal
 interface.py        interface graphique Tkinter de démonstration
 demo.py             démonstration en ligne de commande des principales fonctionnalités
 exemples_execution.txt  sortie de `python3 demo.py` (exemples d'exécution)
+captures/           captures d'écran de l'interface (utilisées dans le rapport)
 requirements.txt    aucune dépendance pip (instructions pour Tkinter)
 data/reseau.txt     réseau du sujet (8 sommets, 11 arcs, H isolé)
 data/reseau2.txt    second graphe de test (5 sommets, 6 arcs, contient le cycle A -> B -> D -> X -> A)
@@ -224,6 +225,10 @@ sujet/              énoncé
 ### Interface graphique (`interface.py`)
 
 Petite démonstration Tkinter, en une seule classe `InterfaceGraphe`.
+
+![Plus court chemin A → G](captures/plus_court_chemin.png)
+
+*Autres captures : [analyse du sommet B](captures/analyse_sommet.png), [cycle de reseau2.txt](captures/cycle.png).*
 
 - **Chargement** : `data/reseau.txt` est chargé au démarrage ; le bouton « Ouvrir un fichier… »
   en charge un autre. Toute `GrapheError` s'affiche dans une boîte de dialogue, et en cas d'échec
