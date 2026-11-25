@@ -228,7 +228,9 @@ Petite démonstration Tkinter, en une seule classe `InterfaceGraphe`.
 
 ![Plus court chemin A → G](captures/plus_court_chemin.png)
 
-*Autres captures : [analyse du sommet B](captures/analyse_sommet.png), [cycle de reseau2.txt](captures/cycle.png).*
+![Analyse du sommet B](captures/analyse_sommet.png)
+
+![Cycle de reseau2.txt](captures/cycle.png)
 
 - **Chargement** : `data/reseau.txt` est chargé au démarrage ; le bouton « Ouvrir un fichier… »
   en charge un autre. Toute `GrapheError` s'affiche dans une boîte de dialogue, et en cas d'échec
