@@ -4,6 +4,7 @@ Projet individuel noté (POO, théorie des graphes, fichiers, algorithmique, tes
 Un réseau de lieux est modélisé par un **graphe orienté pondéré** G = (V, E) ; l'application
 permet de le construire, de le charger depuis un fichier, de l'analyser et de chercher des itinéraires.
 Le sujet complet est dans [`sujet/projet.md`](sujet/projet.md).
+Le rapport est dans [`rapport.pdf`](rapport.pdf) (source : [`rapport.md`](rapport.md)).
 
 ## Environnement
 
@@ -86,6 +87,8 @@ interface.py        interface graphique Tkinter de démonstration
 demo.py             démonstration en ligne de commande des principales fonctionnalités
 exemples_execution.txt  sortie de `python3 demo.py` (exemples d'exécution)
 captures/           captures d'écran de l'interface (utilisées dans le rapport)
+rapport.md          source Markdown du rapport
+rapport.pdf         rapport PDF (2 à 4 pages)
 requirements.txt    aucune dépendance pip (instructions pour Tkinter)
 data/reseau.txt     réseau du sujet (8 sommets, 11 arcs, H isolé)
 data/reseau2.txt    second graphe de test (5 sommets, 6 arcs, contient le cycle A -> B -> D -> X -> A)
@@ -105,7 +108,7 @@ sujet/              énoncé
 | E | Sommet interdit et intersection de graphes | 3 | ✅ Terminée |
 | F | Bonus : détection de cycle **et** tri topologique (les deux options) | +2 | ✅ Terminée |
 | Tests | 8 tests minimum | – | ✅ 109 tests pour les parties A à F |
-| Livrables | Rapport PDF (2 à 4 pages), exemples d'exécution, second graphe de test | – | 🔶 Second graphe (`data/reseau2.txt`), interface de démonstration (`interface.py`) et exemples d'exécution (`demo.py`, `exemples_execution.txt`) faits ; reste le rapport |
+| Livrables | Rapport PDF (2 à 4 pages), exemples d'exécution, second graphe de test | – | ✅ Terminée : second graphe (`data/reseau2.txt`), exemples d'exécution (`demo.py`, `exemples_execution.txt`), interface (`interface.py`) et captures (`captures/`), rapport PDF (`rapport.pdf`) |
 
 ### Partie A (réalisée)
 
@@ -163,8 +166,8 @@ sujet/              énoncé
   raisonnement tomberait (il faudrait Bellman-Ford).
 - **Résultat A → G** : `A → C → B → D → E → F → G`, coût **14** (2 + 1 + 5 + 2 + 3 + 1).
   L'arc direct `B → G` (15) n'est pas retenu.
-- **Préparation de la partie E** : la méthode interne `_dijkstra` accepte déjà un ensemble
-  de sommets exclus, que `shortest_path_avoiding` pourra réutiliser.
+- **Réutilisation dans la partie E** : la méthode interne `_dijkstra` accepte un ensemble
+  de sommets exclus, que `shortest_path_avoiding` réutilise.
 - **Égalités de coût** : un compteur dans la file départage les ex æquo, le résultat est donc
   déterministe (même chemin à chaque exécution).
 
@@ -253,7 +256,7 @@ Petite démonstration Tkinter, en une seule classe `InterfaceGraphe`.
 - `_sommets` : `dict` identifiant → `Sommet`. Test de présence et détection des doublons en O(1),
   ordre d'insertion conservé (affichage stable).
 - `_adjacence` : `dict` identifiant → `dict` (destination → `Arc`). Liste d'adjacence : savoir si
-  l'arc A → B existe est en O(1) et l'énumération des successeurs est directe, ce qui servira à Dijkstra.
+  l'arc A → B existe est en O(1) et l'énumération des successeurs est directe, ce qui sert à Dijkstra.
   Un sommet isolé a simplement un dictionnaire interne vide.
 - `_entrants` : pour chaque sommet, ses prédécesseurs, afin de calculer `predecesseurs` et
   `degre_entrant` sans parcourir tout le graphe.
@@ -288,7 +291,7 @@ Petite démonstration Tkinter, en une seule classe `InterfaceGraphe`.
   sur `reseau2.txt` ; comparaison avec une recherche exhaustive des permutations sur 300 petits graphes
   aléatoires (graine fixe) et cohérence `has_cycle` / `topological_sort`.
 
-## Choix et décisions à reprendre dans le rapport
+## Choix et décisions (détaillés dans le rapport)
 
 - Arcs multiples interdits (choix du sujet).
 - Exceptions personnalisées, avec héritage de `ValueError` / `KeyError` quand c'est pertinent.
@@ -325,6 +328,7 @@ Conformément au sujet, voici l'assistance utilisée.
 | Tests | Oui : choix des cas et écriture des tests |
 | Interface graphique | Oui |
 | Script de démonstration (demo.py) | Oui |
+| Rapport | Oui : rédaction |
 | README | Oui : rédaction et vérification de conformité |
 
 J'ai relu, exécuté et testé l'ensemble du code. Je suis en mesure d'expliquer chaque partie
