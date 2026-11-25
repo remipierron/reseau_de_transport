@@ -1,0 +1,86 @@
+Démonstration : réseau de transport (graphe orienté pondéré)
+
+1. Chargement du réseau (data/reseau.txt)
+=========================================
+Graphe.from_file("data/reseau.txt") -> 8 sommets, 11 arcs
+
+Graphe(8 sommets, 11 arcs)
+  A -> B (4), C (2)
+  B -> D (5), G (15)
+  C -> B (1), D (8), E (10)
+  D -> E (2), F (6)
+  E -> F (3)
+  F -> G (1)
+  G -> (aucun successeur)
+  H -> (aucun successeur)
+
+2. Analyse des sommets (analyser_sommet)
+========================================
+analyser_sommet("H") (sommet isolé)
+    degré entrant : 0, degré sortant : 0, degré total : 0
+    prédécesseurs : (aucun)
+    successeurs   : (aucun)
+analyser_sommet("B")
+    degré entrant : 2, degré sortant : 2, degré total : 4
+    prédécesseurs : A, C
+    successeurs   : D, G
+analyser_sommet("D")
+    degré entrant : 2, degré sortant : 2, degré total : 4
+    prédécesseurs : B, C
+    successeurs   : E, F
+
+3. Plus court chemin (shortest_path)
+====================================
+shortest_path("A", "G") -> A → C → B → D → E → F → G (coût 14)
+shortest_path("A", "H") -> aucun chemin   [H est isolé]
+shortest_path("G", "A") -> aucun chemin   [sens inverse]
+shortest_path("A", "A") -> A (coût 0)   [départ = arrivée]
+
+4. Sommet interdit (shortest_path_avoiding)
+===========================================
+shortest_path_avoiding("A", "G", "C") -> A → B → D → E → F → G (coût 15)
+shortest_path_avoiding("A", "G", "D") -> A → C → E → F → G (coût 16)
+shortest_path_avoiding("A", "G", "F") -> A → C → B → G (coût 18)
+shortest_path_avoiding("A", "G", "G") -> aucun chemin   [interdit = arrivée : impossible]
+
+5. Intersection (reseau.txt ∩ reseau2.txt)
+==========================================
+g.intersection(g2)
+    sommets : A, B, C, D
+    arcs    : A→B (4), B→D (5), C→B (1)
+Graphes d'origine inchangés :
+    g  : 8 sommets, 11 arcs
+    g2 : 5 sommets, 6 arcs
+
+6. Cycles et ordre topologique
+==============================
+Sur reseau.txt :
+    has_cycle() -> False
+    topological_sort() -> A, H, C, B, D, E, F, G
+Sur reseau2.txt :
+    has_cycle() -> True
+    trouver_cycle() -> A → B → D → X → A
+    topological_sort() -> exception interceptée :
+    GrapheCycliqueError : Aucun ordre topologique : le graphe contient un cycle (A -> B -> D -> X -> A).
+
+7. Robustesse de la lecture
+===========================
+Fichier inexistant :
+    Graphe.from_file("data/inexistant.txt")
+    FichierIntrouvableError : Le fichier '<projet>/data/inexistant.txt' est introuvable.
+Ligne mal formée :
+    contenu : 'Sommets: A, B\nA;B\n'
+    FormatFichierError : <dossier temporaire>/mal_formee.txt, ligne 2 : un arc doit avoir 3 champs 'origine;destination;poids', 2 trouvé(s). (ligne lue : 'A;B')
+    (ligne 2, cause : LigneMalFormeeError)
+Poids non numérique :
+    contenu : 'Sommets: A, B\nA;B;quatre\n'
+    FormatFichierError : <dossier temporaire>/poids_texte.txt, ligne 2 : le poids 'quatre' n'est pas un nombre. (ligne lue : 'A;B;quatre')
+    (ligne 2, cause : PoidsInvalideError)
+Poids négatif :
+    contenu : 'Sommets: A, B\nA;B;-3\n'
+    FormatFichierError : <dossier temporaire>/poids_negatif.txt, ligne 2 : Le poids doit être positif ou nul, reçu : -3. (ligne lue : 'A;B;-3')
+    (ligne 2, cause : PoidsInvalideError)
+Arc vers un sommet inconnu :
+    contenu : 'Sommets: A, B\nA;Z;2\n'
+    FormatFichierError : <dossier temporaire>/sommet_inconnu.txt, ligne 2 : Le sommet 'Z' n'existe pas dans le graphe. (ligne lue : 'A;Z;2')
+    (ligne 2, cause : SommetInconnuError)

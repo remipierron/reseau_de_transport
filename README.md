@@ -24,6 +24,15 @@ Le sujet complet est dans [`sujet/projet.md`](sujet/projet.md).
 python3 interface.py
 ```
 
+- **Lancer la démonstration** en ligne de commande (depuis n'importe quel dossier) ; elle enchaîne
+  des exemples pour chaque partie (A à F, robustesse de la lecture), et sa sortie est enregistrée
+  dans `exemples_execution.txt` :
+
+```bash
+python3 demo.py
+python3 demo.py > exemples_execution.txt   # régénérer le fichier d'exemples
+```
+
 - **Lancer les tests** (depuis la racine du projet) :
 
 ```bash
@@ -74,6 +83,8 @@ graphe/             paquet principal
   lecture.py        lecture d'un graphe depuis un fichier texte (`Graphe.from_file`)
   exceptions.py     hiérarchie d'exceptions personnalisées
 interface.py        interface graphique Tkinter de démonstration
+demo.py             démonstration en ligne de commande des principales fonctionnalités
+exemples_execution.txt  sortie de `python3 demo.py` (exemples d'exécution)
 requirements.txt    aucune dépendance pip (instructions pour Tkinter)
 data/reseau.txt     réseau du sujet (8 sommets, 11 arcs, H isolé)
 data/reseau2.txt    second graphe de test (5 sommets, 6 arcs, contient le cycle A -> B -> D -> X -> A)
@@ -93,7 +104,7 @@ sujet/              énoncé
 | E | Sommet interdit et intersection de graphes | 3 | ✅ Terminée |
 | F | Bonus : détection de cycle **et** tri topologique (les deux options) | +2 | ✅ Terminée |
 | Tests | 8 tests minimum | – | ✅ 109 tests pour les parties A à F |
-| Livrables | Rapport PDF (2 à 4 pages), exemples d'exécution, second graphe de test | – | 🔶 Second graphe (`data/reseau2.txt`) et interface de démonstration (`interface.py`) faits ; rapport et exemples d'exécution à faire |
+| Livrables | Rapport PDF (2 à 4 pages), exemples d'exécution, second graphe de test | – | 🔶 Second graphe (`data/reseau2.txt`), interface de démonstration (`interface.py`) et exemples d'exécution (`demo.py`, `exemples_execution.txt`) faits ; reste le rapport |
 
 ### Partie A (réalisée)
 
@@ -306,6 +317,7 @@ Conformément au sujet, voici l'assistance utilisée.
 | A à F (code) | Oui : conception, écriture et optimisation du code |
 | Tests | Oui : choix des cas et écriture des tests |
 | Interface graphique | Oui |
+| Script de démonstration (demo.py) | Oui |
 | README | Oui : rédaction et vérification de conformité |
 
 J'ai relu, exécuté et testé l'ensemble du code. Je suis en mesure d'expliquer chaque partie
