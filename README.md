@@ -99,16 +99,16 @@ sujet/              énoncé
 
 ## Avancement
 
-| Partie | Contenu | Points | État |
-|---|---|---|---|
-| A | Modélisation orientée objet | 3 | ✅ Terminée |
-| B | Lecture de fichier (`from_file`) et robustesse | 2 | ✅ Terminée |
-| C | Analyse : degrés, prédécesseurs, successeurs | 2 | ✅ Terminée |
-| D | Plus court chemin (`shortest_path`, Dijkstra) | 4 | ✅ Terminée |
-| E | Sommet interdit et intersection de graphes | 3 | ✅ Terminée |
-| F | Bonus : détection de cycle **et** tri topologique (les deux options) | +2 | ✅ Terminée |
-| Tests | 8 tests minimum | – | ✅ 109 tests pour les parties A à F |
-| Livrables | Rapport PDF (2 à 4 pages), exemples d'exécution, second graphe de test | – | ✅ Terminée : second graphe (`data/reseau2.txt`), exemples d'exécution (`demo.py`, `exemples_execution.txt`), interface (`interface.py`) et captures (`captures/`), rapport PDF (`rapport.pdf`) |
+| Partie | Contenu | État |
+|---|---|---|
+| A | Modélisation orientée objet | ✅ Terminée |
+| B | Lecture de fichier (`from_file`) et robustesse | ✅ Terminée |
+| C | Analyse : degrés, prédécesseurs, successeurs | ✅ Terminée |
+| D | Plus court chemin (`shortest_path`, Dijkstra) | ✅ Terminée |
+| E | Sommet interdit et intersection de graphes | ✅ Terminée |
+| F | Bonus : détection de cycle **et** tri topologique (les deux options) | ✅ Terminée |
+| Tests | 8 tests minimum | ✅ 109 tests pour les parties A à F |
+| Livrables | Rapport PDF (2 à 4 pages), exemples d'exécution, second graphe de test | ✅ Terminée : second graphe (`data/reseau2.txt`), exemples d'exécution (`demo.py`, `exemples_execution.txt`), interface (`interface.py`) et captures (`captures/`), rapport PDF (`rapport.pdf`) |
 
 ### Partie A (réalisée)
 
